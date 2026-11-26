@@ -1,3 +1,4 @@
+import type { User } from 'firebase/auth';
 import { auth } from './firebase';
 
 export interface AiRouteRequest {
@@ -43,8 +44,9 @@ export interface PublicCapabilitiesResponse {
   };
 }
 
-async function getBearerHeaders(): Promise<Record<string, string>> {
-  const user = auth.currentUser;
+async function getBearerHeaders(
+  user: User | null = auth.currentUser
+): Promise<Record<string, string>> {
   if (!user) {
     throw new Error('Authentication required');
   }
@@ -183,11 +185,17 @@ export async function fetchPublicHealth(): Promise<PublicCapabilitiesResponse> {
   return (await res.json()) as PublicCapabilitiesResponse;
 }
 
-export async function verifyServerSession(): Promise<SessionVerificationResponse> {
-  const headers = await getBearerHeaders();
+export async function verifyServerSession(
+  user: User | null = auth.currentUser
+): Promise<SessionVerificationResponse> {
+  const headers = await getBearerHeaders(user);
   const res = await fetch('/api/auth/session', { headers });
-  if (!res.ok) throw new Error('Session verification failed');
-  return (await res.json()) as SessionVerificationResponse;
+  const data = (await res.json().catch(() => null)) as { error?: unknown } | null;
+  if (!res.ok) {
+    const message = typeof data?.error === 'string' ? data.error : 'Session verification failed';
+    throw new Error(`${message} (HTTP ${res.status})`);
+  }
+  return data as SessionVerificationResponse;
 }
 
 export async function callFounderBootstrap() {

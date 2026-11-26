@@ -274,7 +274,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsGuest(false);
 
       try {
-        const session = await verifyServerSession();
+        const session = await verifyServerSession(firebaseUser);
         setIsFounder(session.isFounder);
         if (session.isFounder) {
           setActiveModuleState((curr) => (curr === 'ai-doctor' ? 'dashboard' : curr));
@@ -464,7 +464,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const result = await signInWithPopup(auth, googleProvider);
       if (result.user) {
         setIsGuest(false);
-        const session = await verifyServerSession();
+        const session = await verifyServerSession(result.user);
         if (session.isFounder) {
           const adminSnap = await getDoc(doc(db, 'admins', result.user.uid)).catch(() => null);
           if (!adminSnap || !adminSnap.exists()) {
