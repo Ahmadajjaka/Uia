@@ -1,0 +1,914 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isVerifiedUser() && request.auth.uid == uid;
+    }
+
+    function isFounderEmail() {
+      return isVerifiedUser() && request.auth.token.email == 'ghifaramamo@gmail.com';
+    }
+
+    function isFounderAdmin() {
+      return isFounderEmail() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isNonEmptyString(val, maxLen) {
+      return val is string && val.size() >= 1 && val.size() <= maxLen;
+    }
+
+    function isBoundedString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidWalletId(val) {
+      return val is string && val.size() >= 11 && val.size() <= 24 && val.matches('^MAMO-[A-Z0-9]{6,12}$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'preferredLanguage', 'skipIntro', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'role',
+          'preferredLanguage',
+          'skipIntro',
+          'specialty',
+          'approvalStatus',
+          'planTier',
+          'points',
+          'pointsBalance',
+          'walletId',
+          'welcomeBonusClaimed',
+          'referralCode',
+          'referredByUid',
+          'referralCount',
+          'theme3d',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && isNonEmptyString(data.email, 254)
+        && isNonEmptyString(data.displayName, 120)
+        && data.role in ['clinician', 'student', 'patient', 'super_admin']
+        && data.preferredLanguage in ['en', 'ar']
+        && data.skipIntro is bool
+        && (!('specialty' in data) || isBoundedString(data.specialty, 120))
+        && (!('approvalStatus' in data) || data.approvalStatus in ['pending', 'approved', 'rejected'])
+        && (!('planTier' in data) || data.planTier in ['free', 'pro'])
+        && (!('points' in data) || (data.points is number && data.points >= 0 && data.points <= 10000000))
+        && (!('pointsBalance' in data) || (data.pointsBalance is number && data.pointsBalance >= 0 && data.pointsBalance <= 10000000))
+        && (!('points' in data) || !('pointsBalance' in data) || data.points == data.pointsBalance)
+        && (!('walletId' in data) || isValidWalletId(data.walletId))
+        && (!('welcomeBonusClaimed' in data) || data.welcomeBonusClaimed is bool)
+        && (!('referralCode' in data) || isValidWalletId(data.referralCode))
+        && (!('referredByUid' in data) || isValidId(data.referredByUid))
+        && (!('referralCount' in data) || (data.referralCount is number && data.referralCount >= 0 && data.referralCount <= 100000))
+        && (!('theme3d' in data) || data.theme3d in ['midnight-cyan', 'obsidian-gold', 'emerald-bio', 'crimson-cardiac', 'arctic-platinum'])
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReferralCodeDoc(data) {
+      return data.keys().hasAll(['code', 'ownerUid', 'ownerName', 'createdAt'])
+        && data.keys().hasOnly(['code', 'ownerUid', 'ownerName', 'createdAt'])
+        && isValidWalletId(data.code)
+        && isValidId(data.ownerUid)
+        && isNonEmptyString(data.ownerName, 120)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidReferralInvite(data) {
+      return data.keys().hasAll(['inviterUid', 'inviterName', 'referralCode', 'colleagueName', 'colleagueEmail', 'specialty', 'channel', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['inviterUid', 'inviterName', 'referralCode', 'colleagueName', 'colleagueEmail', 'specialty', 'channel', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.inviterUid)
+        && isNonEmptyString(data.inviterName, 120)
+        && isValidWalletId(data.referralCode)
+        && isNonEmptyString(data.colleagueName, 120)
+        && isBoundedString(data.colleagueEmail, 254)
+        && isBoundedString(data.specialty, 120)
+        && data.channel in ['link', 'email', 'whatsapp']
+        && data.status in ['pending', 'joined']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReferralClaim(data) {
+      return data.keys().hasAll(['inviteeUid', 'inviteeName', 'inviterUid', 'referralCode', 'inviterBonus', 'inviteeBonus', 'createdAt'])
+        && data.keys().hasOnly(['inviteeUid', 'inviteeName', 'inviterUid', 'referralCode', 'inviterBonus', 'inviteeBonus', 'createdAt'])
+        && isValidId(data.inviteeUid)
+        && isNonEmptyString(data.inviteeName, 120)
+        && isValidId(data.inviterUid)
+        && data.inviteeUid != data.inviterUid
+        && isValidWalletId(data.referralCode)
+        && data.inviterBonus == 100
+        && data.inviteeBonus == 50
+        && data.createdAt == request.time;
+    }
+
+    function isValidFounderAdmin(data) {
+      return data.keys().hasAll(['uid', 'email', 'ownerName', 'title', 'activatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'ownerName', 'title', 'activatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.email == 'ghifaramamo@gmail.com'
+        && isNonEmptyString(data.ownerName, 120)
+        && isNonEmptyString(data.title, 120)
+        && data.activatedAt == request.time;
+    }
+
+    function isValidAccessRequest(data) {
+      return data.keys().hasAll(['userId', 'email', 'displayName', 'requestedRole', 'institutionOrSpecialty', 'note', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'email', 'displayName', 'requestedRole', 'institutionOrSpecialty', 'note', 'status', 'reviewedByEmail', 'createdAt', 'updatedAt'])
+        && isValidId(data.userId)
+        && isNonEmptyString(data.email, 254)
+        && isNonEmptyString(data.displayName, 120)
+        && data.requestedRole in ['clinician', 'student', 'patient']
+        && isBoundedString(data.institutionOrSpecialty, 160)
+        && isBoundedString(data.note, 500)
+        && data.status in ['pending', 'approved', 'rejected']
+        && (!('reviewedByEmail' in data) || isBoundedString(data.reviewedByEmail, 254))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTopupRequest(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'userName', 'requestType', 'requestedPoints', 'paymentReference', 'note', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'userEmail', 'userName', 'requestType', 'requestedPoints', 'paymentReference', 'note', 'status', 'adminNote', 'createdAt', 'updatedAt'])
+        && isValidId(data.userId)
+        && isNonEmptyString(data.userEmail, 254)
+        && isNonEmptyString(data.userName, 120)
+        && data.requestType in ['points', 'pro_upgrade']
+        && data.requestedPoints is number
+        && data.requestedPoints >= 0
+        && data.requestedPoints <= 1000000
+        && isBoundedString(data.paymentReference, 160)
+        && isBoundedString(data.note, 500)
+        && data.status in ['pending', 'approved', 'rejected']
+        && (!('adminNote' in data) || isBoundedString(data.adminNote, 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPointTransaction(data) {
+      return data.keys().hasAll(['userId', 'actorUid', 'txType', 'featureKey', 'pointsDelta', 'balanceAfter', 'description', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'actorUid', 'txType', 'featureKey', 'pointsDelta', 'balanceAfter', 'description', 'createdAt'])
+        && isValidId(data.userId)
+        && isValidId(data.actorUid)
+        && data.txType in ['credit', 'debit', 'pro_grant']
+        && isNonEmptyString(data.featureKey, 80)
+        && data.pointsDelta is number
+        && data.pointsDelta >= -100000
+        && data.pointsDelta <= 1000000
+        && data.balanceAfter is number
+        && data.balanceAfter >= 0
+        && data.balanceAfter <= 10000000
+        && isNonEmptyString(data.description, 300)
+        && data.createdAt == request.time;
+    }
+
+    function isValidFeaturePricing(data) {
+      return data.keys().hasAll(['costs', 'proFeatures', 'starterApprovalPoints', 'proMonthlyPointsBonus', 'updatedByUid', 'updatedAt'])
+        && data.keys().hasOnly(['costs', 'proFeatures', 'starterApprovalPoints', 'proMonthlyPointsBonus', 'updatedByUid', 'updatedAt'])
+        && data.costs is map
+        && data.costs.keys().hasOnly([
+          'ai_doctor_consult',
+          'diagnosis_workup',
+          'lab_ai_interpret',
+          'radiology_vision',
+          'clinical_protocol_ai',
+          'pharma_ai_consult',
+          'clinic_suite',
+          'themes_3d_premium'
+        ])
+        && data.proFeatures is list
+        && data.proFeatures.size() <= 30
+        && (data.proFeatures.size() == 0 || data.proFeatures[0] is string)
+        && data.starterApprovalPoints is number
+        && data.starterApprovalPoints >= 0 && data.starterApprovalPoints <= 10000
+        && data.proMonthlyPointsBonus is number
+        && data.proMonthlyPointsBonus >= 0 && data.proMonthlyPointsBonus <= 100000
+        && isValidId(data.updatedByUid)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll(['userId', 'title', 'specialty', 'provider', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'title', 'specialty', 'provider', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.userId)
+        && isNonEmptyString(data.title, 160)
+        && isNonEmptyString(data.specialty, 80)
+        && data.provider in ['auto', 'grok', 'zai']
+        && data.status in ['active', 'archived']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidConversationMessage(data) {
+      return data.keys().hasAll(['userId', 'role', 'content', 'providerUsed', 'modelUsed', 'hasImage', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'role', 'content', 'providerUsed', 'modelUsed', 'hasImage', 'imageUrl', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && data.role in ['user', 'assistant']
+        && isNonEmptyString(data.content, 20000)
+        && isNonEmptyString(data.providerUsed, 80)
+        && isNonEmptyString(data.modelUsed, 120)
+        && data.hasImage is bool
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 1000))
+        && data.createdAt == request.time;
+    }
+
+    function isValidDiagnosisCase(data) {
+      return data.keys().hasAll(['userId', 'chiefComplaint', 'vitalsSummary', 'examFindings', 'labSummary', 'differentials', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'chiefComplaint', 'vitalsSummary', 'examFindings', 'labSummary', 'differentials', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.chiefComplaint, 500)
+        && isBoundedString(data.vitalsSummary, 500)
+        && isBoundedString(data.examFindings, 2000)
+        && isBoundedString(data.labSummary, 2000)
+        && isNonEmptyString(data.differentials, 16000)
+        && data.createdAt == request.time;
+    }
+
+    function isValidLabResult(data) {
+      return data.keys().hasAll(['userId', 'panelName', 'summary', 'abnormalCount', 'sourceType', 'markers', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'panelName', 'summary', 'abnormalCount', 'sourceType', 'imageUrl', 'markers', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.panelName, 160)
+        && isNonEmptyString(data.summary, 12000)
+        && data.abnormalCount is number
+        && data.abnormalCount >= 0
+        && data.abnormalCount <= 100
+        && data.sourceType in ['manual', 'image', 'file']
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 1000))
+        && data.markers is list
+        && data.markers.size() <= 50
+        && (data.markers.size() == 0 || data.markers[0] is map)
+        && data.createdAt == request.time;
+    }
+
+    function isValidRadiologyReport(data) {
+      return data.keys().hasAll(['userId', 'title', 'modality', 'studyDate', 'findings', 'impression', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'title', 'modality', 'studyDate', 'findings', 'impression', 'imageUrl', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.title, 180)
+        && data.modality in ['X-Ray', 'CT', 'MRI', 'Ultrasound']
+        && isNonEmptyString(data.studyDate, 40)
+        && isNonEmptyString(data.findings, 12000)
+        && isNonEmptyString(data.impression, 6000)
+        && (!('imageUrl' in data) || isBoundedString(data.imageUrl, 1000))
+        && data.createdAt == request.time;
+    }
+
+    function isValidPatientRecord(data) {
+      return data.keys().hasAll(['userId', 'fullName', 'mrn', 'age', 'sex', 'primaryCondition', 'allergies', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['userId', 'fullName', 'mrn', 'age', 'sex', 'primaryCondition', 'allergies', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.userId)
+        && isNonEmptyString(data.fullName, 160)
+        && isNonEmptyString(data.mrn, 64)
+        && data.age is number
+        && data.age >= 0 && data.age <= 130
+        && data.sex in ['Female', 'Male', 'Other']
+        && isNonEmptyString(data.primaryCondition, 240)
+        && isBoundedString(data.allergies, 400)
+        && data.status in ['active', 'discharged']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPatientVisit(data) {
+      return data.keys().hasAll(['userId', 'patientId', 'patientName', 'visitDate', 'visitType', 'soapNote', 'status', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'patientId', 'patientName', 'visitDate', 'visitType', 'soapNote', 'status', 'createdAt'])
+        && isValidId(data.userId)
+        && isValidId(data.patientId)
+        && isNonEmptyString(data.patientName, 160)
+        && isNonEmptyString(data.visitDate, 64)
+        && data.visitType in ['Consultation', 'Follow-up', 'Urgent', 'Telehealth']
+        && isBoundedString(data.soapNote, 10000)
+        && data.status in ['scheduled', 'completed', 'cancelled']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMedicalReport(data) {
+      return data.keys().hasAll(['userId', 'patientId', 'title', 'content', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'patientId', 'title', 'content', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isValidId(data.patientId)
+        && isNonEmptyString(data.title, 200)
+        && isNonEmptyString(data.content, 16000)
+        && data.createdAt == request.time;
+    }
+
+    function isValidHealthLog(data) {
+      return data.keys().hasAll(['userId', 'logType', 'label', 'value', 'unit', 'notes', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'logType', 'label', 'value', 'unit', 'notes', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && data.logType in ['vital', 'symptom', 'medication', 'appointment']
+        && isNonEmptyString(data.label, 160)
+        && isNonEmptyString(data.value, 160)
+        && isBoundedString(data.unit, 40)
+        && isBoundedString(data.notes, 1000)
+        && data.createdAt == request.time;
+    }
+
+    function isValidMedSchoolProgress(data) {
+      return data.keys().hasAll(['userId', 'specialty', 'itemId', 'itemType', 'isCorrect', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'specialty', 'itemId', 'itemType', 'isCorrect', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.specialty, 80)
+        && isValidId(data.itemId)
+        && data.itemType in ['mcq', 'case', 'flashcard']
+        && data.isCorrect is bool
+        && data.createdAt == request.time;
+    }
+
+    function isValidMedicationEntry(data) {
+      return data.keys().hasAll(['genericName', 'drugClass', 'indications', 'warnings', 'interactions', 'updatedAt'])
+        && data.keys().hasOnly(['genericName', 'drugClass', 'indications', 'warnings', 'interactions', 'updatedAt'])
+        && isNonEmptyString(data.genericName, 160)
+        && isNonEmptyString(data.drugClass, 120)
+        && isNonEmptyString(data.indications, 2000)
+        && isNonEmptyString(data.warnings, 2000)
+        && data.interactions is list
+        && data.interactions.size() <= 30
+        && (data.interactions.size() == 0 || data.interactions[0] is string)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidClinicalArticle(data) {
+      return data.keys().hasAll(['title', 'specialty', 'source', 'summary', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'specialty', 'source', 'summary', 'updatedAt'])
+        && isNonEmptyString(data.title, 240)
+        && isNonEmptyString(data.specialty, 100)
+        && isNonEmptyString(data.source, 160)
+        && isNonEmptyString(data.summary, 6000)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidClinicalCase(data) {
+      return data.keys().hasAll(['title', 'specialty', 'difficulty', 'vignette', 'keyFinding', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'specialty', 'difficulty', 'vignette', 'keyFinding', 'updatedAt'])
+        && isNonEmptyString(data.title, 240)
+        && isNonEmptyString(data.specialty, 100)
+        && data.difficulty in ['Foundational', 'Intermediate', 'Advanced']
+        && isNonEmptyString(data.vignette, 6000)
+        && isNonEmptyString(data.keyFinding, 2000)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidAiUsageLog(data) {
+      return data.keys().hasAll(['userId', 'module', 'provider', 'model', 'status', 'latencyMs', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'module', 'provider', 'model', 'status', 'latencyMs', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.module, 80)
+        && data.provider in ['grok', 'zai']
+        && isNonEmptyString(data.model, 120)
+        && data.status in ['success', 'unconfigured', 'error']
+        && data.latencyMs is number
+        && data.latencyMs >= 0
+        && data.createdAt == request.time;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['userId', 'actorEmail', 'action', 'target', 'severity', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'actorEmail', 'action', 'target', 'severity', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isNonEmptyString(data.actorEmail, 254)
+        && isNonEmptyString(data.action, 120)
+        && isNonEmptyString(data.target, 240)
+        && data.severity in ['info', 'warning', 'critical']
+        && data.createdAt == request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['userId', 'title', 'body', 'read', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'title', 'body', 'read', 'createdAt'])
+        && isValidId(data.userId)
+        && isNonEmptyString(data.title, 180)
+        && isNonEmptyString(data.body, 1000)
+        && data.read is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidGuestEvent(data) {
+      return data.keys().hasAll(['sessionId', 'moduleVisited', 'language', 'createdAt'])
+        && data.keys().hasOnly(['sessionId', 'moduleVisited', 'language', 'createdAt'])
+        && isValidId(data.sessionId)
+        && isNonEmptyString(data.moduleVisited, 80)
+        && data.language in ['en', 'ar']
+        && data.createdAt == request.time;
+    }
+
+    function isValidAppSetting(data) {
+      return data.keys().hasAll(['grokEnabled', 'grokModel', 'zaiEnabled', 'zaiModel', 'guestModeEnabled', 'maintenanceMode', 'dailyRequestLimit', 'updatedAt'])
+        && data.keys().hasOnly(['grokEnabled', 'grokModel', 'zaiEnabled', 'zaiModel', 'guestModeEnabled', 'maintenanceMode', 'dailyRequestLimit', 'updatedAt'])
+        && data.grokEnabled is bool
+        && isNonEmptyString(data.grokModel, 120)
+        && data.zaiEnabled is bool
+        && isNonEmptyString(data.zaiModel, 120)
+        && data.guestModeEnabled is bool
+        && data.maintenanceMode is bool
+        && data.dailyRequestLimit is number
+        && data.dailyRequestLimit >= 1 && data.dailyRequestLimit <= 100000
+        && data.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isFounderAdmin());
+      allow list: if isFounderAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && 'approvalStatus' in incoming()
+        && 'planTier' in incoming()
+        && 'points' in incoming()
+        && 'pointsBalance' in incoming()
+        && 'walletId' in incoming()
+        && 'welcomeBonusClaimed' in incoming()
+        && (
+          isFounderEmail()
+          || (
+            incoming().role != 'super_admin'
+            && incoming().approvalStatus == 'pending'
+            && incoming().planTier == 'free'
+            && incoming().points == 100
+            && incoming().pointsBalance == 100
+            && incoming().welcomeBonusClaimed == true
+            && !('referredByUid' in incoming())
+            && (!('referralCount' in incoming()) || incoming().referralCount == 0)
+            && (!('referralCode' in incoming()) || incoming().referralCode == incoming().walletId)
+            && isValidWalletId(incoming().walletId)
+          )
+        );
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isOwner(userId)
+            && incoming().role == existing().role
+            && (!('approvalStatus' in existing()) || incoming().approvalStatus == existing().approvalStatus)
+            && (!('planTier' in existing()) || incoming().planTier == existing().planTier)
+            && (!('points' in existing()) || incoming().points == existing().points)
+            && (!('pointsBalance' in existing()) || incoming().pointsBalance == existing().pointsBalance)
+            && (!('walletId' in existing()) || incoming().walletId == existing().walletId)
+            && (!('welcomeBonusClaimed' in existing()) || incoming().welcomeBonusClaimed == existing().welcomeBonusClaimed)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'preferredLanguage', 'skipIntro', 'specialty', 'theme3d', 'updatedAt']))
+          || (isOwner(userId)
+            && incoming().role == existing().role
+            && !('welcomeBonusClaimed' in existing())
+            && incoming().welcomeBonusClaimed == true
+            && isValidWalletId(incoming().walletId)
+            && (!('walletId' in existing()) || incoming().walletId == existing().walletId)
+            && incoming().points == (('pointsBalance' in existing() ? existing().pointsBalance : 0) + 100)
+            && incoming().pointsBalance == incoming().points
+            && incoming().diff(existing()).affectedKeys().hasOnly(['points', 'pointsBalance', 'walletId', 'welcomeBonusClaimed', 'updatedAt']))
+          || (isOwner(userId)
+            && incoming().role == existing().role
+            && (('points' in existing() && 'points' in incoming() && incoming().points < existing().points)
+              || (!('points' in existing()) && 'pointsBalance' in existing() && incoming().points < existing().pointsBalance))
+            && incoming().points >= 0
+            && incoming().pointsBalance == incoming().points
+            && incoming().diff(existing()).affectedKeys().hasOnly(['points', 'pointsBalance', 'updatedAt']))
+          || (isOwner(userId)
+            && incoming().role == existing().role
+            && !('referralCode' in existing())
+            && isValidWalletId(incoming().referralCode)
+            && incoming().referralCode == existing().walletId
+            && (!('referralCount' in existing()) || incoming().referralCount == existing().referralCount)
+            && (!('referralCount' in incoming()) || incoming().referralCount == 0)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['referralCode', 'referralCount', 'updatedAt']))
+          || (isOwner(userId)
+            && incoming().role == existing().role
+            && !('referredByUid' in existing())
+            && isValidId(incoming().referredByUid)
+            && incoming().referredByUid != userId
+            && (!('approvalStatus' in existing()) || incoming().approvalStatus == existing().approvalStatus)
+            && (!('planTier' in existing()) || incoming().planTier == existing().planTier)
+            && (!('walletId' in existing()) || incoming().walletId == existing().walletId)
+            && incoming().points == (('points' in existing() ? existing().points : ('pointsBalance' in existing() ? existing().pointsBalance : 0)) + 50)
+            && incoming().pointsBalance == incoming().points
+            && incoming().diff(existing()).affectedKeys().hasOnly(['points', 'pointsBalance', 'referredByUid', 'updatedAt'])
+            && !exists(/databases/$(database)/documents/referral_claims/$(userId))
+            && existsAfter(/databases/$(database)/documents/referral_claims/$(userId))
+            && getAfter(/databases/$(database)/documents/referral_claims/$(userId)).data.inviterUid == incoming().referredByUid)
+          || (isVerifiedUser()
+            && request.auth.uid != userId
+            && incoming().role == existing().role
+            && (!('approvalStatus' in existing()) || incoming().approvalStatus == existing().approvalStatus)
+            && (!('planTier' in existing()) || incoming().planTier == existing().planTier)
+            && (!('walletId' in existing()) || incoming().walletId == existing().walletId)
+            && (!('referralCode' in existing()) || incoming().referralCode == existing().referralCode)
+            && incoming().points == (('points' in existing() ? existing().points : ('pointsBalance' in existing() ? existing().pointsBalance : 0)) + 100)
+            && incoming().pointsBalance == incoming().points
+            && incoming().referralCount == (('referralCount' in existing() ? existing().referralCount : 0) + 1)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['points', 'pointsBalance', 'referralCount', 'updatedAt'])
+            && !exists(/databases/$(database)/documents/referral_claims/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/referral_claims/$(request.auth.uid))
+            && getAfter(/databases/$(database)/documents/referral_claims/$(request.auth.uid)).data.inviterUid == userId)
+          || (isFounderAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'role',
+              'approvalStatus',
+              'planTier',
+              'points',
+              'pointsBalance',
+              'walletId',
+              'welcomeBonusClaimed',
+              'referralCode',
+              'referredByUid',
+              'referralCount',
+              'displayName',
+              'preferredLanguage',
+              'skipIntro',
+              'specialty',
+              'theme3d',
+              'updatedAt'
+            ])
+            && (incoming().role != 'super_admin' || userId == request.auth.uid))
+        );
+      allow delete: if false;
+    }
+
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isOwner(adminUid) || isFounderAdmin());
+      allow list: if isFounderEmail();
+      allow create: if isValidId(adminUid) && isFounderEmail() && adminUid == request.auth.uid && isValidFounderAdmin(incoming());
+      allow update, delete: if false;
+    }
+
+    match /access_requests/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidAccessRequest(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidAccessRequest(incoming())
+        && incoming().userId == existing().userId
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isOwner(userId)
+            && existing().status == 'pending'
+            && incoming().status == 'pending'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['requestedRole', 'institutionOrSpecialty', 'note', 'updatedAt']))
+          || (isFounderAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'reviewedByEmail', 'updatedAt']))
+        );
+      allow delete: if false;
+    }
+
+    match /topup_requests/{requestId} {
+      allow get: if isValidId(requestId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(requestId)
+        && isVerifiedUser()
+        && isValidTopupRequest(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(requestId)
+        && isFounderAdmin()
+        && isValidTopupRequest(incoming())
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status == 'pending'
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminNote', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /point_transactions/{txId} {
+      allow get: if isValidId(txId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderAdmin());
+      allow create: if isValidId(txId)
+        && isVerifiedUser()
+        && isValidPointTransaction(incoming())
+        && (
+          (incoming().userId == request.auth.uid
+            && incoming().actorUid == request.auth.uid
+            && incoming().txType == 'debit'
+            && incoming().pointsDelta < 0)
+          || (txId == ('welcome_' + request.auth.uid)
+            && incoming().userId == request.auth.uid
+            && incoming().actorUid == request.auth.uid
+            && incoming().txType == 'credit'
+            && incoming().featureKey == 'welcome_login_bonus'
+            && incoming().pointsDelta == 100)
+          || (txId == ('ref_invitee_' + request.auth.uid)
+            && incoming().userId == request.auth.uid
+            && incoming().actorUid == request.auth.uid
+            && incoming().txType == 'credit'
+            && incoming().featureKey == 'referral_join_bonus'
+            && incoming().pointsDelta == 50
+            && existsAfter(/databases/$(database)/documents/referral_claims/$(request.auth.uid)))
+          || (txId == ('ref_inviter_' + request.auth.uid)
+            && incoming().userId != request.auth.uid
+            && incoming().actorUid == request.auth.uid
+            && incoming().txType == 'credit'
+            && incoming().featureKey == 'referral_inviter_bonus'
+            && incoming().pointsDelta == 100
+            && existsAfter(/databases/$(database)/documents/referral_claims/$(request.auth.uid))
+            && getAfter(/databases/$(database)/documents/referral_claims/$(request.auth.uid)).data.inviterUid == incoming().userId)
+          || (isFounderAdmin()
+            && incoming().actorUid == request.auth.uid
+            && incoming().txType in ['credit', 'pro_grant'])
+        );
+      allow update, delete: if false;
+    }
+
+    match /referral_codes/{code} {
+      allow get: if isValidWalletId(code) && isVerifiedUser();
+      allow list: if false;
+      allow create: if isValidWalletId(code)
+        && isVerifiedUser()
+        && isValidReferralCodeDoc(incoming())
+        && incoming().code == code
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    match /referral_invites/{inviteId} {
+      allow get: if isValidId(inviteId) && isVerifiedUser() && (existing().inviterUid == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.inviterUid == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(inviteId)
+        && isVerifiedUser()
+        && isValidReferralInvite(incoming())
+        && incoming().inviterUid == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(inviteId)
+        && isVerifiedUser()
+        && isValidReferralInvite(incoming())
+        && existing().inviterUid == request.auth.uid
+        && incoming().inviterUid == existing().inviterUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isValidId(inviteId) && isVerifiedUser() && (existing().inviterUid == request.auth.uid || isFounderAdmin());
+    }
+
+    match /referral_claims/{inviteeUid} {
+      allow get: if isValidId(inviteeUid) && isVerifiedUser()
+        && (inviteeUid == request.auth.uid || existing().inviterUid == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser()
+        && (resource.data.inviterUid == request.auth.uid || resource.data.inviteeUid == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(inviteeUid)
+        && isVerifiedUser()
+        && inviteeUid == request.auth.uid
+        && isValidReferralClaim(incoming())
+        && incoming().inviteeUid == request.auth.uid
+        && exists(/databases/$(database)/documents/referral_codes/$(incoming().referralCode))
+        && get(/databases/$(database)/documents/referral_codes/$(incoming().referralCode)).data.ownerUid == incoming().inviterUid
+        && existsAfter(/databases/$(database)/documents/point_transactions/$('ref_invitee_' + inviteeUid))
+        && existsAfter(/databases/$(database)/documents/point_transactions/$('ref_inviter_' + inviteeUid));
+      allow update, delete: if false;
+    }
+
+    match /feature_pricing/{docId} {
+      allow get: if isValidId(docId) && (isSignedIn() || isFounderAdmin());
+      allow list: if isFounderEmail();
+      allow create, update: if isValidId(docId)
+        && isFounderAdmin()
+        && isValidFeaturePricing(incoming())
+        && incoming().updatedByUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if isValidId(conversationId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(conversationId)
+        && isVerifiedUser()
+        && isValidConversation(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(conversationId)
+        && isVerifiedUser()
+        && isValidConversation(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'status', 'provider', 'updatedAt']);
+      allow delete: if isValidId(conversationId) && isVerifiedUser() && existing().userId == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow get: if isValidId(conversationId) && isValidId(messageId) && isVerifiedUser()
+          && (get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid || isFounderAdmin());
+        allow list: if isValidId(conversationId) && isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+        allow create: if isValidId(conversationId) && isValidId(messageId) && isVerifiedUser()
+          && isValidConversationMessage(incoming())
+          && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /diagnosis_cases/{caseId} {
+      allow get: if isValidId(caseId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(caseId) && isVerifiedUser() && isValidDiagnosisCase(incoming());
+      allow update: if false;
+      allow delete: if isValidId(caseId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /lab_results/{labId} {
+      allow get: if isValidId(labId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(labId) && isVerifiedUser() && isValidLabResult(incoming());
+      allow update: if false;
+      allow delete: if isValidId(labId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /radiology_reports/{scanId} {
+      allow get: if isValidId(scanId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(scanId) && isVerifiedUser() && isValidRadiologyReport(incoming());
+      allow update: if false;
+      allow delete: if isValidId(scanId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /patient_records/{recordId} {
+      allow get: if isValidId(recordId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(recordId)
+        && isVerifiedUser()
+        && isValidPatientRecord(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(recordId)
+        && isVerifiedUser()
+        && isValidPatientRecord(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['primaryCondition', 'allergies', 'status', 'updatedAt']);
+      allow delete: if isValidId(recordId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /patient_visits/{visitId} {
+      allow get: if isValidId(visitId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(visitId)
+        && isVerifiedUser()
+        && isValidPatientVisit(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/patient_records/$(incoming().patientId))
+        && get(/databases/$(database)/documents/patient_records/$(incoming().patientId)).data.userId == request.auth.uid;
+      allow update: if isValidId(visitId)
+        && isVerifiedUser()
+        && isValidPatientVisit(incoming())
+        && existing().userId == request.auth.uid
+        && existing().status != 'completed'
+        && incoming().userId == existing().userId
+        && incoming().patientId == existing().patientId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['soapNote', 'status']);
+      allow delete: if isValidId(visitId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /medical_reports/{reportId} {
+      allow get: if isValidId(reportId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(reportId)
+        && isVerifiedUser()
+        && isValidMedicalReport(incoming())
+        && exists(/databases/$(database)/documents/patient_records/$(incoming().patientId))
+        && get(/databases/$(database)/documents/patient_records/$(incoming().patientId)).data.userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isValidId(reportId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /health_logs/{logId} {
+      allow get: if isValidId(logId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(logId) && isVerifiedUser() && isValidHealthLog(incoming());
+      allow update: if false;
+      allow delete: if isValidId(logId) && isVerifiedUser() && existing().userId == request.auth.uid;
+    }
+
+    match /medschool_progress/{progressId} {
+      allow get: if isValidId(progressId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(progressId) && isVerifiedUser() && isValidMedSchoolProgress(incoming());
+      allow update, delete: if false;
+    }
+
+    match /medications/{medId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.updatedAt is timestamp;
+      allow create, update: if isValidId(medId) && isFounderAdmin() && isValidMedicationEntry(incoming());
+      allow delete: if isValidId(medId) && isFounderAdmin();
+    }
+
+    match /clinical_articles/{articleId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.updatedAt is timestamp;
+      allow create, update: if isValidId(articleId) && isFounderAdmin() && isValidClinicalArticle(incoming());
+      allow delete: if isValidId(articleId) && isFounderAdmin();
+    }
+
+    match /clinical_cases/{caseId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.updatedAt is timestamp;
+      allow create, update: if isValidId(caseId) && isFounderAdmin() && isValidClinicalCase(incoming());
+      allow delete: if isValidId(caseId) && isFounderAdmin();
+    }
+
+    match /ai_usage/{usageId} {
+      allow get: if isValidId(usageId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(usageId) && isVerifiedUser() && isValidAiUsageLog(incoming());
+      allow update, delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId) && isFounderAdmin();
+      allow list: if isFounderEmail();
+      allow create: if isValidId(logId) && isVerifiedUser() && isValidAuditLog(incoming());
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notifId} {
+      allow get: if isValidId(notifId) && isVerifiedUser() && (existing().userId == request.auth.uid || isFounderAdmin());
+      allow list: if isVerifiedUser() && (resource.data.userId == request.auth.uid || isFounderEmail());
+      allow create: if isValidId(notifId) && isFounderAdmin() && isValidNotification(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(notifId)
+        && isVerifiedUser()
+        && isValidNotification(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isValidId(notifId) && isFounderAdmin();
+    }
+
+    match /guest_analytics/{sessionId} {
+      allow get: if isValidId(sessionId) && isFounderAdmin();
+      allow list: if isFounderEmail();
+      allow create: if isValidId(sessionId) && isValidGuestEvent(incoming());
+      allow update, delete: if false;
+    }
+
+    match /app_settings/{settingId} {
+      allow get: if isValidId(settingId) && (isSignedIn() || isFounderAdmin());
+      allow list: if isFounderEmail();
+      allow create, update: if isValidId(settingId) && isFounderAdmin() && isValidAppSetting(incoming());
+      allow delete: if false;
+    }
+  }
+}

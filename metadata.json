@@ -1,0 +1,6 @@
+{
+  "name": "MAMO MED AI",
+  "description": "Your Intelligent Medical Universe — Global 3D Medical Intelligence Platform founded by Ahmed Nawar Al-Mamo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

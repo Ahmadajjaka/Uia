@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgMaskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A1833" />
+      <stop offset="100%" stop-color="#050B16" />
+    </linearGradient>
+    <linearGradient id="accentMaskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#1D6FEB" />
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed solid canvas with 15% safe zone margin for Android adaptive maskable icon cropping -->
+  <rect width="512" height="512" fill="url(#bgMaskGrad)" />
+  <circle cx="256" cy="256" r="142" fill="#0B162C" stroke="url(#accentMaskGrad)" stroke-width="10" />
+  <rect x="234" y="160" width="44" height="192" rx="14" fill="url(#accentMaskGrad)" />
+  <rect x="160" y="234" width="192" height="44" rx="14" fill="url(#accentMaskGrad)" />
+  <polyline
+    points="146,256 198,256 222,202 252,310 282,220 306,256 366,256"
+    fill="none"
+    stroke="#F4F7FB"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

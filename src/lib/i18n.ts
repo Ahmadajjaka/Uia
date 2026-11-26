@@ -1,0 +1,100 @@
+export type Language = 'en' | 'ar';
+
+export const TRANSLATIONS = {
+  en: {
+    brand: 'MAMO MED AI',
+    tagline: 'Your Intelligent Medical Universe',
+    founderCredit: 'Founder & CEO: Ahmed Nawar Al-Mamo',
+    skipIntro: 'Skip Intro',
+    replayIntro: 'Replay Intro',
+    navOverview: 'Platform',
+    navModules: 'Modules',
+    navIntelligence: 'Medical AI',
+    navSecurity: 'Security',
+    navFaq: 'FAQ',
+    getStarted: 'Get Started',
+    exploreMamoMed: 'Explore MAMO MED',
+    heroTitle: 'The Future of Medical Intelligence',
+    heroSubtitle:
+      'An intelligent medical ecosystem designed for doctors, students, and healthcare professionals.',
+    medicalDisclaimer:
+      'Clinical Decision Support Notice: MAMO MED AI assists licensed clinicians and learners with structured synthesis, uncertainty bounds, and references. It does not replace independent clinical judgment or physician diagnosis.',
+    guestModeTitle: 'Guest Exploration Mode',
+    guestModeBanner:
+      'You are exploring MAMO MED AI in scoped Guest Mode. Interactive 3D viewports and reference libraries are open; sign in with Google to persist clinical records and run server-authenticated AI queries.',
+    signInGoogle: 'Continue with Google',
+    enterGuest: 'Explore as Guest',
+    signOut: 'Sign Out',
+    languageLabel: 'العربية',
+    reduceMotionOn: 'Calm Motion',
+    reduceMotionOff: '3D Motion',
+    founderConsole: 'Founder Admin',
+    founderSetup: 'Founder Activation',
+    walletModuleTitle: 'Wallet, Pro & 3D Themes',
+    workspaceModules: {
+      dashboard: 'Command Center',
+      'ai-doctor': 'AI Doctor',
+      diagnosis: 'Diagnosis',
+      'lab-analyzer': 'Lab Analyzer',
+      radiology: 'Radiology',
+      'echo-training': 'Echo Training (10m)',
+      'medical-images': 'Medical Images (20K)',
+      pharma: 'Pharma (20K)',
+      'med-school': 'Med School',
+      clinic: 'Clinic',
+      health: 'Health',
+      clinical: 'Medical Reference',
+      referrals: 'Invite Colleagues',
+      wallet: 'Wallet & Pro',
+      admin: 'Founder Admin'
+    }
+  },
+  ar: {
+    brand: 'MAMO MED AI',
+    tagline: 'Your Intelligent Medical Universe',
+    founderCredit: 'المؤسس والمدير العام: أحمد نوار المامو',
+    skipIntro: 'تخطي المقدمة',
+    replayIntro: 'إعادة المقدمة',
+    navOverview: 'المنصة',
+    navModules: 'الوحدات',
+    navIntelligence: 'الذكاء الطبي',
+    navSecurity: 'الأمان',
+    navFaq: 'الأسئلة',
+    getStarted: 'ابدأ الآن',
+    exploreMamoMed: 'استكشف MAMO MED',
+    heroTitle: 'مستقبل الذكاء الطبي العالمي',
+    heroSubtitle:
+      'منظومة طبية ذكية ثلاثية الأبعاد مصممة للأطباء وطلاب الطب والممارسين الصحيين.',
+    medicalDisclaimer:
+      'تنبيه سريري: منصة MAMO MED AI أداة دعم قرار طبي مساعدة تعتمد على المراجع ودرجة عدم اليقين، ولا تُعد بديلاً عن تقييم الطبيب المختص.',
+    guestModeTitle: 'وضع الاستكشاف للضيف',
+    guestModeBanner:
+      'أنت تستكشف MAMO MED AI في وضع الضيف المحمي. يمكنك تجربة الواجهات ثلاثية الأبعاد والمكتبات المرجعية بحرية؛ سجّل الدخول بحساب Google لحفظ السجلات وتشغيل الذكاء الاصطناعي الطبي.',
+    signInGoogle: 'الدخول بحساب Google',
+    enterGuest: 'الدخول كضيف',
+    signOut: 'تسجيل الخروج',
+    languageLabel: 'English',
+    reduceMotionOn: 'حركة هادئة',
+    reduceMotionOff: 'حركة 3D',
+    founderConsole: 'لوحة المؤسس',
+    founderSetup: 'تفعيل المؤسس',
+    walletModuleTitle: 'المحفظة وبرو وثيمات 3D',
+    workspaceModules: {
+      dashboard: 'مركز القيادة',
+      'ai-doctor': 'الطبيب الذكي',
+      diagnosis: 'التشخيص التفريقي',
+      'lab-analyzer': 'محلل المختبرات',
+      radiology: 'الأشعة والتصوير',
+      'echo-training': 'تدريب الإيكو (10د)',
+      'medical-images': 'صور طبية (20 ألف)',
+      pharma: 'الأدوية (20 ألف)',
+      'med-school': 'كلية الطب',
+      clinic: 'إدارة العيادات',
+      health: 'الصحة الشخصية',
+      clinical: 'المرجع الطبي',
+      referrals: 'دعوة الزملاء (+100)',
+      wallet: 'المحفظة وبرو',
+      admin: 'إدارة المؤسس'
+    }
+  }
+} as const;

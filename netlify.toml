@@ -1,0 +1,36 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/route"
+  to = "/.netlify/functions/ai-route"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/bootstrap"
+  to = "/.netlify/functions/founder-bootstrap"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/ai/*"
+  to = "/.netlify/functions/admin-ai"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

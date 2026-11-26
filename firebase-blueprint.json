@@ -1,0 +1,531 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user account and display preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["clinician", "student", "patient", "super_admin"] },
+        "preferredLanguage": { "type": "string", "enum": ["en", "ar"] },
+        "skipIntro": { "type": "boolean" },
+        "specialty": { "type": "string", "maxLength": 120 },
+        "approvalStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "planTier": { "type": "string", "enum": ["free", "pro"] },
+        "points": { "type": "number" },
+        "pointsBalance": { "type": "number" },
+        "walletId": { "type": "string", "maxLength": 24, "pattern": "^MAMO-[A-Z0-9]{6,12}$" },
+        "welcomeBonusClaimed": { "type": "boolean" },
+        "referralCode": { "type": "string", "maxLength": 24, "pattern": "^MAMO-[A-Z0-9]{6,12}$" },
+        "referredByUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "referralCount": { "type": "number" },
+        "theme3d": { "type": "string", "enum": ["midnight-cyan", "obsidian-gold", "emerald-bio", "crimson-cardiac", "arctic-platinum"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName", "role", "preferredLanguage", "skipIntro", "createdAt", "updatedAt"]
+    },
+    "FounderAdmin": {
+      "title": "FounderAdmin",
+      "description": "Immutable UID-bound Super Admin record for Founder Ahmed Nawar Al-Mamo",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "ownerName": { "type": "string", "maxLength": 120 },
+        "title": { "type": "string", "maxLength": 120 },
+        "activatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "ownerName", "title", "activatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "AI Doctor clinical conversation session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 160 },
+        "specialty": { "type": "string", "maxLength": 80 },
+        "provider": { "type": "string", "enum": ["auto", "grok", "zai"] },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "specialty", "provider", "status", "createdAt", "updatedAt"]
+    },
+    "ConversationMessage": {
+      "title": "ConversationMessage",
+      "description": "Message inside an AI Doctor conversation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "maxLength": 20000 },
+        "providerUsed": { "type": "string", "maxLength": 80 },
+        "modelUsed": { "type": "string", "maxLength": 120 },
+        "hasImage": { "type": "boolean" },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "role", "content", "providerUsed", "modelUsed", "hasImage", "createdAt"]
+    },
+    "DiagnosisCase": {
+      "title": "DiagnosisCase",
+      "description": "Differential diagnosis workup saved by clinician or student",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "chiefComplaint": { "type": "string", "maxLength": 500 },
+        "vitalsSummary": { "type": "string", "maxLength": 500 },
+        "examFindings": { "type": "string", "maxLength": 2000 },
+        "labSummary": { "type": "string", "maxLength": 2000 },
+        "differentials": { "type": "string", "maxLength": 16000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "chiefComplaint", "vitalsSummary", "examFindings", "labSummary", "differentials", "createdAt"]
+    },
+    "LabResult": {
+      "title": "LabResult",
+      "description": "Laboratory panel interpretation and structured markers",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "panelName": { "type": "string", "maxLength": 160 },
+        "summary": { "type": "string", "maxLength": 12000 },
+        "abnormalCount": { "type": "number" },
+        "sourceType": { "type": "string", "enum": ["manual", "image", "file"] },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "markers": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "panelName", "summary", "abnormalCount", "sourceType", "markers", "createdAt"]
+    },
+    "RadiologyReport": {
+      "title": "RadiologyReport",
+      "description": "Radiology imaging study and AI interpretation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 180 },
+        "modality": { "type": "string", "enum": ["X-Ray", "CT", "MRI", "Ultrasound"] },
+        "studyDate": { "type": "string", "maxLength": 40 },
+        "findings": { "type": "string", "maxLength": 12000 },
+        "impression": { "type": "string", "maxLength": 6000 },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "modality", "studyDate", "findings", "impression", "createdAt"]
+    },
+    "PatientRecord": {
+      "title": "PatientRecord",
+      "description": "Clinic patient record owned by the clinician",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "maxLength": 160 },
+        "mrn": { "type": "string", "maxLength": 64 },
+        "age": { "type": "number" },
+        "sex": { "type": "string", "enum": ["Female", "Male", "Other"] },
+        "primaryCondition": { "type": "string", "maxLength": 240 },
+        "allergies": { "type": "string", "maxLength": 400 },
+        "status": { "type": "string", "enum": ["active", "discharged"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "mrn", "age", "sex", "primaryCondition", "allergies", "status", "createdAt", "updatedAt"]
+    },
+    "PatientVisit": {
+      "title": "PatientVisit",
+      "description": "Clinic appointment or clinical encounter linked to a PatientRecord",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "patientId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "patientName": { "type": "string", "maxLength": 160 },
+        "visitDate": { "type": "string", "maxLength": 64 },
+        "visitType": { "type": "string", "enum": ["Consultation", "Follow-up", "Urgent", "Telehealth"] },
+        "soapNote": { "type": "string", "maxLength": 10000 },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "patientId", "patientName", "visitDate", "visitType", "soapNote", "status", "createdAt"]
+    },
+    "MedicalReport": {
+      "title": "MedicalReport",
+      "description": "Structured clinical report generated for a patient encounter",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "patientId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 16000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "patientId", "title", "content", "createdAt"]
+    },
+    "HealthLog": {
+      "title": "HealthLog",
+      "description": "Personal health vital sign, symptom, or medication entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "logType": { "type": "string", "enum": ["vital", "symptom", "medication", "appointment"] },
+        "label": { "type": "string", "maxLength": 160 },
+        "value": { "type": "string", "maxLength": 160 },
+        "unit": { "type": "string", "maxLength": 40 },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "logType", "label", "value", "unit", "notes", "createdAt"]
+    },
+    "MedSchoolProgress": {
+      "title": "MedSchoolProgress",
+      "description": "Medical student MCQ and case completion score",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "specialty": { "type": "string", "maxLength": 80 },
+        "itemId": { "type": "string", "maxLength": 128 },
+        "itemType": { "type": "string", "enum": ["mcq", "case", "flashcard"] },
+        "isCorrect": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "specialty", "itemId", "itemType", "isCorrect", "createdAt"]
+    },
+    "MedicationEntry": {
+      "title": "MedicationEntry",
+      "description": "Curated pharmacology reference item managed by Founder Admin",
+      "type": "object",
+      "properties": {
+        "genericName": { "type": "string", "maxLength": 160 },
+        "drugClass": { "type": "string", "maxLength": 120 },
+        "indications": { "type": "string", "maxLength": 2000 },
+        "warnings": { "type": "string", "maxLength": 2000 },
+        "interactions": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["genericName", "drugClass", "indications", "warnings", "interactions", "updatedAt"]
+    },
+    "ClinicalArticle": {
+      "title": "ClinicalArticle",
+      "description": "Curated clinical guideline or evidence summary managed by Founder Admin",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 240 },
+        "specialty": { "type": "string", "maxLength": 100 },
+        "source": { "type": "string", "maxLength": 160 },
+        "summary": { "type": "string", "maxLength": 6000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "specialty", "source", "summary", "updatedAt"]
+    },
+    "ClinicalCase": {
+      "title": "ClinicalCase",
+      "description": "Curated teaching clinical case managed by Founder Admin",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 240 },
+        "specialty": { "type": "string", "maxLength": 100 },
+        "difficulty": { "type": "string", "enum": ["Foundational", "Intermediate", "Advanced"] },
+        "vignette": { "type": "string", "maxLength": 6000 },
+        "keyFinding": { "type": "string", "maxLength": 2000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "specialty", "difficulty", "vignette", "keyFinding", "updatedAt"]
+    },
+    "AiUsageLog": {
+      "title": "AiUsageLog",
+      "description": "Telemetry entry for Grok and Z.AI requests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "module": { "type": "string", "maxLength": 80 },
+        "provider": { "type": "string", "enum": ["grok", "zai"] },
+        "model": { "type": "string", "maxLength": 120 },
+        "status": { "type": "string", "enum": ["success", "unconfigured", "error"] },
+        "latencyMs": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "module", "provider", "model", "status", "latencyMs", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Append-only security and governance audit trail",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorEmail": { "type": "string", "maxLength": 254 },
+        "action": { "type": "string", "maxLength": 120 },
+        "target": { "type": "string", "maxLength": 240 },
+        "severity": { "type": "string", "enum": ["info", "warning", "critical"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "actorEmail", "action", "target", "severity", "createdAt"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "System or clinical notification item",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 180 },
+        "body": { "type": "string", "maxLength": 1000 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "body", "read", "createdAt"]
+    },
+    "GuestAnalyticsEvent": {
+      "title": "GuestAnalyticsEvent",
+      "description": "Non-PII guest exploration event for Founder Analytics",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "moduleVisited": { "type": "string", "maxLength": 80 },
+        "language": { "type": "string", "enum": ["en", "ar"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sessionId", "moduleVisited", "language", "createdAt"]
+    },
+    "AppSetting": {
+      "title": "AppSetting",
+      "description": "Founder-managed platform and AI model routing configuration (never stores raw API keys)",
+      "type": "object",
+      "properties": {
+        "grokEnabled": { "type": "boolean" },
+        "grokModel": { "type": "string", "maxLength": 120 },
+        "zaiEnabled": { "type": "boolean" },
+        "zaiModel": { "type": "string", "maxLength": 120 },
+        "guestModeEnabled": { "type": "boolean" },
+        "maintenanceMode": { "type": "boolean" },
+        "dailyRequestLimit": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["grokEnabled", "grokModel", "zaiEnabled", "zaiModel", "guestModeEnabled", "maintenanceMode", "dailyRequestLimit", "updatedAt"]
+    },
+    "AccessRequest": {
+      "title": "AccessRequest",
+      "description": "Login approval request routed to Founder Admin before full workspace unlock",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 254 },
+        "displayName": { "type": "string", "maxLength": 120 },
+        "requestedRole": { "type": "string", "enum": ["clinician", "student", "patient"] },
+        "institutionOrSpecialty": { "type": "string", "maxLength": 160 },
+        "note": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "reviewedByEmail": { "type": "string", "maxLength": 254 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "displayName", "requestedRole", "institutionOrSpecialty", "note", "status", "createdAt", "updatedAt"]
+    },
+    "TopupRequest": {
+      "title": "TopupRequest",
+      "description": "User request to recharge points or upgrade to Pro membership reviewed by Founder Admin",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userEmail": { "type": "string", "format": "email", "maxLength": 254 },
+        "userName": { "type": "string", "maxLength": 120 },
+        "requestType": { "type": "string", "enum": ["points", "pro_upgrade"] },
+        "requestedPoints": { "type": "number" },
+        "paymentReference": { "type": "string", "maxLength": 160 },
+        "note": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "adminNote": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userEmail", "userName", "requestType", "requestedPoints", "paymentReference", "note", "status", "createdAt", "updatedAt"]
+    },
+    "PointTransaction": {
+      "title": "PointTransaction",
+      "description": "Immutable points credit/debit ledger entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "txType": { "type": "string", "enum": ["credit", "debit", "pro_grant"] },
+        "featureKey": { "type": "string", "maxLength": 80 },
+        "pointsDelta": { "type": "number" },
+        "balanceAfter": { "type": "number" },
+        "description": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "actorUid", "txType", "featureKey", "pointsDelta", "balanceAfter", "description", "createdAt"]
+    },
+    "FeaturePricingCatalog": {
+      "title": "FeaturePricingCatalog",
+      "description": "Founder-managed point cost per feature and Pro feature access gates",
+      "type": "object",
+      "properties": {
+        "costs": { "type": "object" },
+        "proFeatures": { "type": "array" },
+        "starterApprovalPoints": { "type": "number" },
+        "proMonthlyPointsBonus": { "type": "number" },
+        "updatedByUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["costs", "proFeatures", "starterApprovalPoints", "proMonthlyPointsBonus", "updatedByUid", "updatedAt"]
+    },
+    "ReferralCodeLookup": {
+      "title": "ReferralCodeLookup",
+      "description": "Non-PII directory mapping a referral code (MAMO-XXXXXXXX) to its owning clinician UID",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "maxLength": 24, "pattern": "^MAMO-[A-Z0-9]{6,12}$" },
+        "ownerUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerName": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "ownerUid", "ownerName", "createdAt"]
+    },
+    "ReferralInvite": {
+      "title": "ReferralInvite",
+      "description": "Colleague invitation record created by an authenticated user",
+      "type": "object",
+      "properties": {
+        "inviterUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "inviterName": { "type": "string", "maxLength": 120 },
+        "referralCode": { "type": "string", "maxLength": 24, "pattern": "^MAMO-[A-Z0-9]{6,12}$" },
+        "colleagueName": { "type": "string", "maxLength": 120 },
+        "colleagueEmail": { "type": "string", "format": "email", "maxLength": 254 },
+        "specialty": { "type": "string", "maxLength": 120 },
+        "channel": { "type": "string", "enum": ["link", "email", "whatsapp"] },
+        "status": { "type": "string", "enum": ["pending", "joined"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["inviterUid", "inviterName", "referralCode", "colleagueName", "colleagueEmail", "specialty", "channel", "status", "createdAt", "updatedAt"]
+    },
+    "ReferralClaim": {
+      "title": "ReferralClaim",
+      "description": "One-time immutable referral claim keyed by inviteeUid triggering atomic WalletPro bonuses",
+      "type": "object",
+      "properties": {
+        "inviteeUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "inviteeName": { "type": "string", "maxLength": 120 },
+        "inviterUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "referralCode": { "type": "string", "maxLength": 24, "pattern": "^MAMO-[A-Z0-9]{6,12}$" },
+        "inviterBonus": { "type": "number" },
+        "inviteeBonus": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["inviteeUid", "inviteeName", "inviterUid", "referralCode", "inviterBonus", "inviteeBonus", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User account profiles and localization preferences"
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/FounderAdmin" },
+      "description": "UID-bound Super Admin registry exclusively for Founder Ahmed Nawar Al-Mamo"
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "AI Doctor clinical conversation headers"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ConversationMessage" },
+      "description": "AI Doctor conversation messages"
+    },
+    "/diagnosis_cases/{caseId}": {
+      "schema": { "$ref": "#/entities/DiagnosisCase" },
+      "description": "Saved differential diagnosis workups"
+    },
+    "/lab_results/{labId}": {
+      "schema": { "$ref": "#/entities/LabResult" },
+      "description": "Saved laboratory panels and biomarker interpretations"
+    },
+    "/radiology_reports/{scanId}": {
+      "schema": { "$ref": "#/entities/RadiologyReport" },
+      "description": "Saved radiology studies and findings"
+    },
+    "/patient_records/{recordId}": {
+      "schema": { "$ref": "#/entities/PatientRecord" },
+      "description": "Clinician-owned patient records"
+    },
+    "/patient_visits/{visitId}": {
+      "schema": { "$ref": "#/entities/PatientVisit" },
+      "description": "Clinician-owned patient encounter visits"
+    },
+    "/medical_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/MedicalReport" },
+      "description": "Clinician-owned formal medical reports"
+    },
+    "/health_logs/{logId}": {
+      "schema": { "$ref": "#/entities/HealthLog" },
+      "description": "Personal health vitals, symptoms, and medication logs"
+    },
+    "/medschool_progress/{progressId}": {
+      "schema": { "$ref": "#/entities/MedSchoolProgress" },
+      "description": "Medical student learning progress records"
+    },
+    "/medications/{medId}": {
+      "schema": { "$ref": "#/entities/MedicationEntry" },
+      "description": "Curated pharmacology database entries"
+    },
+    "/clinical_articles/{articleId}": {
+      "schema": { "$ref": "#/entities/ClinicalArticle" },
+      "description": "Curated clinical guidelines and articles"
+    },
+    "/clinical_cases/{caseId}": {
+      "schema": { "$ref": "#/entities/ClinicalCase" },
+      "description": "Curated Med School teaching vignettes"
+    },
+    "/ai_usage/{usageId}": {
+      "schema": { "$ref": "#/entities/AiUsageLog" },
+      "description": "AI router invocation logs"
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Immutable security and administrative audit logs"
+    },
+    "/notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "User and Founder notifications"
+    },
+    "/guest_analytics/{sessionId}": {
+      "schema": { "$ref": "#/entities/GuestAnalyticsEvent" },
+      "description": "Non-PII guest module exploration analytics"
+    },
+    "/app_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSetting" },
+      "description": "Platform configuration and non-secret AI routing metadata"
+    },
+    "/access_requests/{userId}": {
+      "schema": { "$ref": "#/entities/AccessRequest" },
+      "description": "Login access approval requests routed to Founder Admin"
+    },
+    "/topup_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/TopupRequest" },
+      "description": "User points recharge and Pro membership upgrade requests"
+    },
+    "/point_transactions/{txId}": {
+      "schema": { "$ref": "#/entities/PointTransaction" },
+      "description": "Immutable points credit and debit transaction ledger"
+    },
+    "/feature_pricing/{docId}": {
+      "schema": { "$ref": "#/entities/FeaturePricingCatalog" },
+      "description": "Founder-configured point cost and Pro tier gate per platform feature"
+    },
+    "/referral_codes/{code}": {
+      "schema": { "$ref": "#/entities/ReferralCodeLookup" },
+      "description": "Non-PII lookup table for verifying referral codes without exposing user profiles"
+    },
+    "/referral_invites/{inviteId}": {
+      "schema": { "$ref": "#/entities/ReferralInvite" },
+      "description": "Colleague invitations logged by clinicians"
+    },
+    "/referral_claims/{inviteeUid}": {
+      "schema": { "$ref": "#/entities/ReferralClaim" },
+      "description": "Immutable one-time referral bonus claim ledger keyed by invitee UID"
+    }
+  }
+}
