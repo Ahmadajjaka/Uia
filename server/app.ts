@@ -4,7 +4,7 @@ import {
   requireFounderAdmin,
   getFounderEmail,
   type AuthenticatedRequest
-} from './authMiddleware';
+} from './authMiddleware.js';
 import {
   getAdminAiStatus,
   getPublicAiCapabilities,
@@ -12,14 +12,14 @@ import {
   testProviderConnectivity,
   updateAdminAiConfig,
   type AiProviderId
-} from './aiRouter';
-import { searchMedicalReferences } from './medicalReference';
+} from './aiRouter.js';
+import { searchMedicalReferences } from './medicalReference.js';
 import {
   handleMedicalImageProxy,
   handleMedicalVideoProxy,
   searchRealEchoVideos,
   searchRealMedicalImages
-} from './medicalImages';
+} from './medicalImages.js';
 
 export function createApiApp(): express.Express {
   const app = express();
