@@ -1,0 +1,48 @@
+
+name: Extract ZIP into repository
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Extract ZIP
+        run: |
+          set -e
+          ZIP_FILE="mamo-med-ai (2).zip"
+          test -f "$ZIP_FILE"
+
+          TEMP_DIR=$(mktemp -d)
+          unzip -q "$ZIP_FILE" -d "$TEMP_DIR"
+
+          mapfile -t ITEMS < <(find "$TEMP_DIR" -mindepth 1 -maxdepth 1)
+
+          if [ "${#ITEMS[@]}" -eq 1 ] && [ -d "${ITEMS[0]}" ]; then
+            SOURCE="${ITEMS[0]}"
+          else
+            SOURCE="$TEMP_DIR"
+          fi
+
+          rsync -a --exclude='.git/' --exclude='.github/' "$SOURCE/" ./
+          rm -f "$ZIP_FILE"
+          rm -rf "$TEMP_DIR"
+
+      - name: Save extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Extract MAMO MED AI ZIP archive"
+            git push origin HEAD:main
+          fi
