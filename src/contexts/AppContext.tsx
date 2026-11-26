@@ -276,6 +276,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         const session = await verifyServerSession(firebaseUser);
         setIsFounder(session.isFounder);
+        setView('app');
         if (session.isFounder) {
           setActiveModuleState((curr) => (curr === 'ai-doctor' ? 'dashboard' : curr));
         } else {
