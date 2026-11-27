@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  onAuthStateChanged,
+  setPersistence,
+  signInWithPopup,
+  signOut,
+  type User
+} from 'firebase/auth';
 import {
   doc,
   getDoc,
@@ -275,6 +282,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const session = await verifyServerSession(firebaseUser);
+        setView('app');
         setIsFounder(session.isFounder);
         setView('app');
         const adminCheck = session.isFounder
@@ -467,6 +475,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     setAuthError(null);
     try {
+      await setPersistence(auth, browserLocalPersistence);
       const result = await signInWithPopup(auth, googleProvider);
       if (result.user) setIsGuest(false);
     } catch (err) {

@@ -9,6 +9,8 @@ import {
   Pill,
   Search,
   Sparkles,
+  Sun,
+  Moon,
   X
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
@@ -42,6 +44,13 @@ export function PharmaModule() {
   const [selectedClass, setSelectedClass] = useState('All');
   const [selectedRoute, setSelectedRoute] = useState('All');
   const [page, setPage] = useState(1);
+  const [dayTheme, setDayTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem('mamo_pharma_day_theme') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [drugA, setDrugA] = useState(catalog.baseMolecules[0]?.en || 'Apixaban');
   const [drugB, setDrugB] = useState(catalog.baseMolecules[4]?.en || 'Warfarin Sodium');
@@ -140,8 +149,26 @@ Provide: mechanism summary, renal/hepatic dosing pearls, critical contraindicati
     }
   };
 
+  const toggleDayTheme = () => {
+    setDayTheme((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem('mamo_pharma_day_theme', String(next));
+      } catch {
+        // Keep the toggle usable when browser storage is unavailable.
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="space-y-6">
+    <div className={`pharma-module relative isolate min-w-0 space-y-6 ${dayTheme ? 'pharma-module--day' : ''}`}>
+      <div className="pharma-atmosphere" data-reduced-motion={reducedMotion} aria-hidden="true">
+        <span className="pharma-atmosphere__orb pharma-atmosphere__orb--one" />
+        <span className="pharma-atmosphere__orb pharma-atmosphere__orb--two" />
+        <span className="pharma-atmosphere__ring" />
+      </div>
+      <div className="relative z-10 space-y-6">
       {/* Verified 20,000 Unique Bilingual Registry Banner */}
       <div className="glass-panel rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -186,11 +213,24 @@ Provide: mechanism summary, renal/hepatic dosing pearls, critical contraindicati
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={toggleDayTheme}
+          aria-pressed={dayTheme}
+          className="pharma-theme-toggle inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+        >
+          {dayTheme ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          <span>
+            {dayTheme
+              ? isAr ? 'التبديل إلى المظهر الليلي' : 'Switch to dark theme'
+              : isAr ? 'التبديل إلى المظهر النهاري' : 'Switch to daylight theme'}
+          </span>
+        </button>
       </div>
 
-      <div className="grid lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Left Sidebar: 3D Molecule + Interaction Screener + AI Pharmacist */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="min-w-0 space-y-4 xl:col-span-5">
           <div className="glass-panel rounded-2xl p-4 h-48">
             <MedicalSceneCanvas
               mode="molecule"
@@ -329,7 +369,7 @@ Provide: mechanism summary, renal/hepatic dosing pearls, critical contraindicati
         </div>
 
         {/* Right Workspace: Search + Class/Route Filters + Paginated 20K Directory */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="min-w-0 space-y-4 xl:col-span-7">
           <div className="glass-panel rounded-2xl p-4 space-y-3">
             <div className="grid md:grid-cols-12 gap-3">
               <div className="md:col-span-6 relative">
@@ -567,6 +607,7 @@ Provide: mechanism summary, renal/hepatic dosing pearls, critical contraindicati
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
