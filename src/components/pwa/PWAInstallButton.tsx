@@ -6,11 +6,13 @@ import { usePWAInstall } from '../../hooks/usePWAInstall';
 interface PWAInstallButtonProps {
   variant?: 'compact' | 'primary';
   className?: string;
+  iconOnlyOnNarrow?: boolean;
 }
 
 export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   variant = 'compact',
-  className = ''
+  className = '',
+  iconOnlyOnNarrow = false
 }) => {
   const { language } = useApp();
   const isAr = language === 'ar';
@@ -32,6 +34,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
     setShowGuideModal(true);
   };
 
+  const installLabel = isAr
+    ? variant === 'primary'
+      ? 'تثبيت التطبيق على الجوال'
+      : 'تثبيت التطبيق'
+    : variant === 'primary'
+      ? 'Install Mobile App'
+      : 'Install App';
+
   const buttonStyles =
     variant === 'primary'
       ? 'btn-3d-secondary min-h-[44px] px-5 py-3 rounded-xl text-sm font-semibold text-[#22D3EE] border border-[#22D3EE]/40 inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0'
@@ -39,17 +49,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
 
   return (
     <>
-      <button type="button" onClick={handlePress} className={`${buttonStyles} ${className}`}>
+      <button
+        type="button"
+        aria-label={installLabel}
+        onClick={handlePress}
+        className={`${buttonStyles} ${className}`}
+      >
         {isIOS ? <Share className="w-3.5 h-3.5 shrink-0" /> : <Download className="w-3.5 h-3.5 shrink-0" />}
-        <span>
-          {isAr
-            ? variant === 'primary'
-              ? 'تثبيت التطبيق على الجوال'
-              : 'تثبيت التطبيق'
-            : variant === 'primary'
-              ? 'Install Mobile App'
-              : 'Install App'}
-        </span>
+        <span className={iconOnlyOnNarrow ? 'max-[400px]:sr-only' : undefined}>{installLabel}</span>
       </button>
 
       {showGuideModal && (
@@ -122,8 +129,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 </li>
                 <li>
                   {isAr
-                    ? 'سيقوم أندرويد بتوليد حزمة تطبيق WebAPK وتثبيته بأيقونة كاملة على الشاشة دون الحاجة لملف APK خارجي.'
-                    : 'Android will package and install the app onto your home screen and app drawer with full standalone launch.'}
+                    ? 'سيثبّت أندرويد التطبيق بأيقونة خاصة؛ وعند فتحه سيعمل في نافذة مستقلة بلا شريط عنوان Chrome.'
+                    : 'Android installs an app icon that opens in its own standalone window without Chrome’s address bar.'}
                 </li>
               </ol>
             )}

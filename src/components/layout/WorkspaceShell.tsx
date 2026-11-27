@@ -101,7 +101,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-midnight)] text-[var(--pearl-white)] flex flex-col lg:flex-row">
+    <div className="min-h-[100dvh] w-full min-w-0 overflow-x-clip bg-[var(--bg-midnight)] text-[var(--pearl-white)] flex flex-col lg:flex-row">
       {/* Desktop Sidebar (260px) */}
       <aside className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col border-e border-white/10 bg-[var(--bg-abyss)]">
         <div className="h-16 px-6 flex items-center justify-between border-b border-white/10">
@@ -211,7 +211,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Workspace Header */}
-        <header className="h-16 px-4 sm:px-6 border-b border-white/10 bg-[var(--bg-abyss)]/90 flex items-center justify-between gap-4 sticky top-0 z-30">
+        <header className="h-16 px-3 sm:px-6 border-b border-white/10 bg-[var(--bg-abyss)]/90 flex items-center justify-between gap-2 sm:gap-4 sticky top-0 z-30">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -232,7 +232,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {user && (
               <button
                 type="button"
@@ -271,22 +271,27 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               <span>{reducedMotion ? t.reduceMotionOn : t.reduceMotionOff}</span>
             </button>
 
-            <PWAInstallButton variant="compact" />
+            <PWAInstallButton
+              variant="compact"
+              iconOnlyOnNarrow
+              className="max-[400px]:min-h-[44px] max-[400px]:min-w-[44px] max-[400px]:justify-center max-[400px]:px-2.5 max-[400px]:gap-0"
+            />
 
             <button
               type="button"
+              aria-label={t.languageLabel}
               onClick={toggleLanguage}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-xs font-medium text-[var(--electric-cyan)] hover:bg-white/5 whitespace-nowrap"
+              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-xs font-medium text-[var(--electric-cyan)] hover:bg-white/5 whitespace-nowrap max-[400px]:px-2.5 max-[400px]:gap-0"
             >
               <Globe className="w-3.5 h-3.5" />
-              <span>{t.languageLabel}</span>
+              <span className="max-[400px]:sr-only">{t.languageLabel}</span>
             </button>
 
             {isGuest && (
               <button
                 type="button"
                 onClick={() => setView('auth')}
-                className="btn-3d-primary px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white whitespace-nowrap"
+                className="hidden sm:inline-flex min-h-[44px] btn-3d-primary px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white whitespace-nowrap"
               >
                 {t.signInGoogle}
               </button>
@@ -325,7 +330,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Active Module Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10 max-w-7xl w-full mx-auto">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10 max-w-7xl w-full mx-auto">
           {children}
         </main>
 
@@ -351,7 +356,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               }`}
             >
               <Icon className="w-4 h-4 shrink-0" />
-              <span className="truncate max-w-[68px]">{t.workspaceModules[id]}</span>
+              <span className="block w-full min-w-0 max-w-full truncate text-center">{t.workspaceModules[id]}</span>
             </button>
           );
         })}
