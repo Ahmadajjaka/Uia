@@ -276,6 +276,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         const session = await verifyServerSession(firebaseUser);
         setIsFounder(session.isFounder);
+        setView('app');
+        const adminCheck = session.isFounder
+          ? getDoc(doc(db, 'admins', firebaseUser.uid)).catch(() => null)
+          : Promise.resolve(null);
         if (session.isFounder) {
           setActiveModuleState((curr) => (curr === 'ai-doctor' ? 'dashboard' : curr));
         } else {
@@ -328,8 +332,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         );
 
         if (session.isFounder) {
-          const adminSnap = await getDoc(doc(db, 'admins', firebaseUser.uid)).catch(() => null);
-          setFounderActivated(Boolean(adminSnap && adminSnap.exists()));
+          const adminSnap = await adminCheck;
+          const activated = Boolean(adminSnap && adminSnap.exists());
+          setFounderActivated(activated);
+          if (!activated) setView('founder-setup');
         } else {
           setFounderActivated(false);
         }
@@ -462,18 +468,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAuthError(null);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        setIsGuest(false);
-        const session = await verifyServerSession(result.user);
-        if (session.isFounder) {
-          const adminSnap = await getDoc(doc(db, 'admins', result.user.uid)).catch(() => null);
-          if (!adminSnap || !adminSnap.exists()) {
-            setView('founder-setup');
-            return;
-          }
-        }
-        setView('app');
-      }
+      if (result.user) setIsGuest(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Google Sign-In failed.';
       setAuthError(message);
