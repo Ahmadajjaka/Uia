@@ -107,7 +107,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         <div className="h-16 px-6 flex items-center justify-between border-b border-white/10">
           <button
             type="button"
-            onClick={() => setView('landing')}
+            onClick={() => setView(user ? 'app' : 'landing')}
             className="font-display text-base font-bold tracking-tight text-[var(--pearl-white)] whitespace-nowrap"
           >
             MAMO MED AI
