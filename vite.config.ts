@@ -29,6 +29,7 @@ export default defineConfig(() => {
           theme_color: '#050B16',
           background_color: '#050B16',
           display: 'standalone',
+          display_override: ['standalone'],
           orientation: 'any',
           start_url: '/',
           scope: '/',
